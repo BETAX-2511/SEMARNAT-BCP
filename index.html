@@ -106,8 +106,10 @@ th{background:#f1ecfa;color:var(--p)}
     <button id="bGuardar">Guardar</button>
     <button class="sec" id="bDup">Duplicar reporte (otra ubicación)</button>
     <button class="danger" id="bDel">Eliminar</button>
+    <button class="sec" id="bImpXls">Cargar desde Excel</button>
     <button class="sec" id="bImpJ">Importar JSON</button>
     <button class="sec" id="bExpJ">Exportar JSON</button>
+    <input type="file" id="fImpXls" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     <input type="file" id="fImpJ" accept="application/json" hidden>
     <span id="msg"></span>
   </div>
@@ -823,6 +825,38 @@ document.getElementById('fImpJ').onchange = async e => {
   const o = JSON.parse(await f.text());
   S = {...newReport(), ...o, id: uid(), decl: {...defaults(DECL), ...o.decl}, ubi: {...defaults(UBI), ...o.ubi}, alc: {...S.alc, ...o.alc}};
   renderAll(); await saveNow(); setMsg('Reporte importado');
+};
+
+/* Carga desde la plantilla Excel: crea un reporte nuevo con los datos del archivo */
+document.getElementById('bImpXls').onclick = () => document.getElementById('fImpXls').click();
+document.getElementById('fImpXls').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let lectura;
+  try { lectura = leerExcel(await leerBuffer(f)); }
+  catch (err) { setMsg('No se pudo leer el Excel: ' + err.message); return; }
+  const {R, errs} = lectura;
+  const graves = errs.filter(x => x.nivel === 'error');
+  if (graves.length){ setMsg('No se cargó el Excel: ' + graves[0].m); return; }
+
+  // Discrepancia entre "Declarado como BPC" y la concentración: se avisa y el formulario calcula el dato
+  const avisos = [];
+  R.equipos.forEach((q, i) => {
+    if ((q.marcadoBPC === 'Sí' || q.marcadoBPC === 'No') && q.concPpm !== '' && q.concPpm != null &&
+        (isBPC(q) !== (q.marcadoBPC === 'Sí')))
+      avisos.push(`Equipo ${i+1}: marcado ${q.marcadoBPC === 'Sí' ? 'BPC' : 'no BPC'} pero la concentración es ${q.concPpm} ppm`);
+  });
+  // El formulario no captura "Declarado como BPC": se descarta del reporte porque se calcula con la concentración
+  const campos = new Set(EQ.map(x => x.k));
+  R.equipos = R.equipos.map(q => Object.fromEntries(Object.entries(q).filter(([k]) => campos.has(k))));
+
+  await saveNow();                                   // guarda el reporte que estaba abierto
+  R.logo = S.logo || null;                           // el logotipo se conserva; el Excel no lo incluye
+  R.efirma = null;                                   // la firma se genera otra vez sobre los datos cargados
+  R.updated = '';
+  S = R;
+  renderAll(); await saveNow();
+  const extra = avisos.length ? ' Revise: ' + avisos.join('; ') + '.' : '';
+  setMsg(`Excel cargado como reporte nuevo (${R.equipos.length} equipo(s)). Firme de nuevo.` + extra);
 };
 
 /* ================= Salidas: XML y PDF ================= */
