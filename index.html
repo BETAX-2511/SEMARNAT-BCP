@@ -6,6 +6,7 @@
 <title>Reportes BPC · NOM-133-SEMARNAT-2015</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--p:#674EA7;--g:#20D500;--bg:#f7f5fb;--line:#d9d2e9;--err:#b42318;--warn:#b54708}
 *{box-sizing:border-box}
@@ -55,22 +56,24 @@ header a{color:#fff;font-size:13px}
 .vmain{max-width:1100px;margin:auto;padding:18px}
 .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
 h2{color:var(--p);font-size:15px;margin:0 0 10px;border-bottom:2px solid var(--p);padding-bottom:4px}
+h3{font-size:13px;color:var(--p);margin:16px 0 6px}
 .desc{font-size:12px;color:#555}
 .badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;margin-right:6px}
 .bErr{background:#fde8e6;color:var(--err)}
 .bWarn{background:#fef0c7;color:var(--warn)}
-.bOk{background:#e8fbe0;color:var(--ok)}
-.bNd{background:#eee;color:#555}
+.bOk{background:#ece6f7;color:var(--p)}
 button{background:var(--p);color:#fff;border:0;border-radius:5px;padding:8px 12px;cursor:pointer;font:inherit}
 button.sec{background:#fff;color:var(--p);border:1px solid var(--p)}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
 th{background:#f1ecfa;color:var(--p)}
 .nivel{font-weight:bold;white-space:nowrap}
-.n-error{color:var(--err)} .n-advertencia{color:var(--warn)} .n-ok{color:var(--ok)}
+.n-error{color:var(--err)} .n-advertencia{color:var(--warn)} .n-ok{color:var(--p)}
+.e-error{color:var(--err);font-weight:bold} .e-adv{color:var(--warn);font-weight:bold}
+.e-vacio{color:var(--err)} .e-ok{color:var(--p);font-weight:bold} .e-na{color:#777}
 .firma{border-radius:8px;padding:12px;margin:8px 0;font-size:13px}
-.firma-ok{background:#e8fbe0;border:1px solid #9bd98a}
+.firma-ok{background:#ece6f7;border:1px solid #b7a4dc}
 .firma-mal{background:#fde8e6;border:1px solid #f2a39b}
 .firma-nd{background:#f2f2f2;border:1px solid #ccc}
 @media print{
@@ -175,9 +178,10 @@ th{background:#f1ecfa;color:var(--p)}
 
   <section class="card noprint">
     <h2>Documento a revisar</h2>
-    <p class="desc">Suba el XML generado por el formulario, o el JSON de respaldo. El PDF es solo la versión impresa del XML y no se revisa directamente.</p>
+    <p class="desc">Suba el <b>XML</b> o el <b>JSON</b> generados por el formulario, o el <b>Excel</b> de la plantilla llenada. Se revisan todos los campos del formulario con las mismas reglas.</p>
+    <p class="desc">Los <b>PDF</b> no se validan: son la versión impresa y su texto no tiene estructura confiable. Para validar, use el XML o el Excel del mismo reporte.</p>
     <div class="toolbar">
-      <input type="file" id="fDoc" accept=".xml,.json,application/xml,application/json">
+      <input type="file" id="fDoc" accept=".xml,.json,.xlsx,application/xml,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       <button class="sec" id="bImp">Imprimir informe</button>
     </div>
     <div id="errorCarga" class="desc"></div>
@@ -189,17 +193,18 @@ th{background:#f1ecfa;color:var(--p)}
     <div id="firmaBox"></div>
   </section>
 
-  <section class="card" id="datos" hidden>
-    <h2>Datos del documento</h2>
-    <div id="datosBody"></div>
-  </section>
-
-  <section class="card" id="detalle" hidden>
+  <section class="card" id="hallazgos" hidden>
     <h2>Hallazgos</h2>
     <table>
-      <thead><tr><th style="width:110px">Resultado</th><th style="width:140px">Sección</th><th>Descripción</th></tr></thead>
+      <thead><tr><th style="width:110px">Resultado</th><th style="width:150px">Sección</th><th>Descripción</th></tr></thead>
       <tbody id="tbHallazgos"></tbody>
     </table>
+  </section>
+
+  <section class="card" id="campos" hidden>
+    <h2>Revisión campo por campo</h2>
+    <p class="desc">Muestra los campos del formulario de captura con su valor y su resultado. * = obligatorio.</p>
+    <div id="camposBody"></div>
   </section>
 
 </div>
@@ -228,7 +233,7 @@ const ALC = [
 ];
 
 /* ================= Campos (cada uno con su referencia a la norma) ================= */
-// t: text | number | year | date | textarea | select | radio | checks | check1
+// t: text | number | year | date | textarea | select | radio | checks | sino (Sí/No explícito)
 // b: bloque de la norma · w: condición extra de alcance · req: obligatorio
 const DECL = [
   {k:'razonSocial',b:'A',l:'Razón social del poseedor',r:'§4.12; Apéndice A',t:'text',req:1},
@@ -239,7 +244,7 @@ const DECL = [
   {k:'periodo',b:'H',l:'Año que reporta',r:'§6.4; §8.2.3',t:'year',req:1},
   {k:'fechaReporte',b:'H',l:'Fecha de presentación del reporte anual',r:'§6.4; §8.2.3',desc:'Periodo: 1 de marzo al 30 de junio',t:'date',req:1},
   {k:'cedula',b:'H',l:'¿Gran generador? (Cédula de Operación Anual)',r:'§6.4.1',t:'radio',o:['Sí','No','No aplica'],req:0},
-  {k:'conservacion',b:'H',l:'Documentos conservados cinco años',r:'§6.2; §6.7; §8.2.2 a §8.2.5',t:'check1',req:1}
+  {k:'conservacion',b:'H',l:'Documentos conservados cinco años',r:'§6.2; §6.7; §8.2.2 a §8.2.5',t:'sino',req:1}
 ];
 
 const UBI = [
@@ -247,12 +252,12 @@ const UBI = [
   {k:'direccion',b:'A',l:'Dirección de la ubicación',r:'§4.12',t:'text',req:1},
   {k:'tipoTransp',b:'F',l:'Tipo de transporte',r:'§7.1',t:'checks',o:['Terrestre','Marítimo'],req:1},
   {k:'transportista',b:'F',l:'Empresa transportista',r:'§7.2',t:'text',req:1},
-  {k:'capacitTrans',b:'F',l:'Transportista capacitado y con equipo para contener derrames',r:'§7.2',t:'check1',req:1},
-  {k:'directorio',b:'F',l:'Directorio de emergencia en la unidad (Protección Civil y PROFEPA)',r:'§7.2',t:'check1',req:1},
-  {k:'limpiezaUnid',b:'F',l:'Unidades contaminadas sometidas a limpieza',r:'§7.2.1',t:'check1',req:0},
+  {k:'capacitTrans',b:'F',l:'Transportista capacitado y con equipo para contener derrames',r:'§7.2',t:'sino',req:1},
+  {k:'directorio',b:'F',l:'Directorio de emergencia en la unidad (Protección Civil y PROFEPA)',r:'§7.2',t:'sino',req:1},
+  {k:'limpiezaUnid',b:'F',l:'Unidades contaminadas sometidas a limpieza',r:'§7.2.1',t:'sino',req:0},
   {k:'manifiesto',b:'F',l:'Número de manifiesto',r:'§6.7; §8.2.5',t:'text',req:1},
-  {k:'acondic',b:'F',l:'Residuo acondicionado y etiquetado para almacenamiento y transporte',r:'§4.1; §7',t:'check1',req:1},
-  {k:'noDesagr',b:'F',l:'Equipos BPC no desagregados (salvo para destrucción)',r:'§6.9',t:'check1',req:1},
+  {k:'acondic',b:'F',l:'Residuo acondicionado y etiquetado para almacenamiento y transporte',r:'§4.1; §7',t:'sino',req:1},
+  {k:'noDesagr',b:'F',l:'Equipos BPC no desagregados (salvo para destrucción)',r:'§6.9',t:'sino',req:1},
   {k:'analPrev',b:'G',l:'Fecha de análisis previo al servicio (aceite libre de BPC)',r:'§6.8; §6.8.1',t:'date',req:1},
   {k:'analTres',b:'G',l:'Fecha de análisis a los tres meses de operación',r:'§6.8; §6.8.1',t:'date',req:1},
   {k:'resG',b:'G',l:'Concentración de BPC en el análisis (ppm)',r:'§6.8',t:'number',req:1,desc:'Debe ser menor a 50 ppm'}
@@ -269,7 +274,7 @@ const EQ = [
   {k:'fluido',b:'B',l:'Fluido dieléctrico declarado en placa',r:'§5.1; Apéndice D',t:'select',o:FLUIDOS,req:0},
   {k:'docRespaldo',b:'B',l:'Documento que respalda el contenido',r:'§5.1; §5.2',t:'checks',o:['Placa','Comprobante de descontaminación','Reporte de análisis','Hoja de datos de seguridad','Ninguno'],req:1},
   {k:'concPpm',b:'B',l:'Concentración de BPC (ppm)',r:'§4.7; §5.3.1; Apéndice E',desc:'50 ppm o más = equipo BPC',t:'number',req:1},
-  {k:'etiqueta',b:'B',l:'Etiqueta de identificación colocada',r:'§5.5; Apéndice A',t:'check1',req:0},
+  {k:'etiqueta',b:'B',l:'Etiqueta de identificación colocada',r:'§5.5; Apéndice A',t:'sino',req:0},
   {k:'pesoAceiteKg',b:'B',l:'Peso del aceite (kg)',r:'Apéndice E',desc:'Sin placa: 30 % del volumen con densidad 0.88 kg/L',t:'number',req:1},
   {k:'pesoTotalTon',b:'B',l:'Peso total (ton)',r:'§6.2; Apéndice E',t:'number',req:1},
   {k:'litros',b:'B',l:'Litros de aceite dieléctrico',r:'§6.2',t:'number',req:1},
@@ -284,14 +289,14 @@ const EQ = [
   {k:'respMant',b:'D',l:'Nombre del responsable del mantenimiento',r:'§6.2',t:'text',req:1},
   {k:'concPost',b:'D',l:'Concentración de BPC posterior al mantenimiento (ppm)',r:'§6.2',t:'number',req:1},
   {k:'revAnual',b:'D',l:'Fecha de la revisión anual del equipo',r:'Apéndice C.1',t:'date',req:0},
-  {k:'programaPrev',b:'D',l:'Programa de mantenimiento preventivo vigente',r:'§6.3; Apéndice C',t:'check1',req:1},
+  {k:'programaPrev',b:'D',l:'Programa de mantenimiento preventivo vigente',r:'§6.3; Apéndice C',t:'sino',req:1},
   {k:'fechaDesinc',b:'E',l:'Fecha de desincorporación',r:'§6.5; §4.5',desc:'Año límite de la norma: 2025',t:'date',req:0},
   {k:'procTrat',b:'E',l:'Proceso de tratamiento',r:'§4.16; §7.3.1',t:'select',o:['Ninguno','Retrolavado (menos de 500 ppm)','Extracción líquido-líquido'],req:0,w:'tra'},
   {k:'procElim',b:'E',l:'Proceso de eliminación',r:'§7.3.2',t:'select',o:['Ninguno','Incineración','Gasificación','Plasma','Pirólisis','Químico catalítico'],req:0,w:'tra'},
   {k:'empresaTrat',b:'E',l:'Empresa que realizó el tratamiento (razón social y RFC)',r:'§6.2; §6.6',t:'text',req:0,w:'tra'},
   {k:'autorSemarnat',b:'E',l:'Número de autorización SEMARNAT del prestador',r:'§6.7; §8.2.5',t:'text',req:0,w:'tra'},
   {k:'vigenciaAut',b:'E',l:'Vigencia de la autorización',r:'§6.7',t:'date',req:0,w:'tra'},
-  {k:'comprobante',b:'E',l:'Comprobante de tratamiento o destrucción',r:'§6.6; §8.2.4; Apéndice B',t:'check1',req:0,w:'tra'},
+  {k:'comprobante',b:'E',l:'Comprobante de tratamiento o destrucción',r:'§6.6; §8.2.4; Apéndice B',t:'sino',req:0,w:'tra'},
   {k:'concResid',b:'E',l:'Concentración resultante tras el tratamiento (ppm)',r:'§6.2; §7.3.1.1',t:'number',req:0,w:'tra'},
   {k:'emAire',b:'E',l:'Emisión a la atmósfera (mg/m³)',r:'§7.4; Tabla 2',desc:'Límite máximo: 0.5 mg/m³',t:'number',req:0,w:'tra'},
   {k:'emAgua',b:'E',l:'Agua residual (mg/L)',r:'§7.4; Tabla 2',desc:'Límite máximo: 5 mg/L',t:'number',req:0,w:'tra'},
@@ -306,7 +311,7 @@ const LIMPIAR_UBI = ['manifiesto','analPrev','analTres','resG'];
 function uid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function nr(t){ return String(t).replace(/§ ?/g, 'num. '); }
 function esc(s){ return nr(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function defaults(list){ return Object.fromEntries(list.map(f => [f.k, f.t==='check1' ? false : f.t==='checks' ? [] : ''])); }
+function defaults(list){ return Object.fromEntries(list.map(f => [f.k, f.t==='checks' ? [] : ''])); }
 function newReport(){
   return { id: uid(), nombre: 'Nuevo reporte', logo: null, decl: defaults(DECL),
            alc: {op:false,alm:false,res:false,tra:false,tsit:false},
@@ -341,7 +346,6 @@ function validateReport(R){
       const v = obj[f.k];
       let empty;
       if (f.t === 'checks') empty = !(v && v.length);
-      else if (f.t === 'check1') empty = !v;
       else empty = (v === '' || v == null);
       if (f.req && empty) E.push({m: `${lab}: falta "${f.l}" (${f.r})`, id: pref + f.k});
     }
@@ -351,7 +355,7 @@ function validateReport(R){
 
   if (R.decl.fechaReporte){
     const m = new Date(R.decl.fechaReporte + 'T12:00:00').getMonth() + 1;
-    if (m < 3 || m > 6) W.push({m:'Fecha de reporte fuera del periodo 1 de marzo al 30 de junio (§6.4)', id:'d-fechaReporte'});
+    if (m < 3 || m > 6) E.push({m:'Fecha de reporte fuera del periodo 1 de marzo al 30 de junio (§6.4)', id:'d-fechaReporte'});
   }
   if (blockVis(R, 'G') && R.ubi.resG !== '' && R.ubi.resG != null && Number(R.ubi.resG) >= 50)
     E.push({m:'Aceite de transformador con 50 ppm o más: no es libre de BPC (§6.8)', id:'u-resG'});
@@ -368,9 +372,12 @@ function validateReport(R){
     }
     if (q.concPpm !== '' && q.concPpm != null){
       const bpc = isBPC(q);
-      if (!bpc && q.etiqueta) W.push({m:`${L}: menor a 50 ppm pero tiene etiqueta BPC (§5.5)`, id: p+'etiqueta'});
-      if (bpc && !q.etiqueta && blockVis(R, 'B')) W.push({m:`${L}: es BPC; falta colocar la etiqueta (§5.5)`, id: p+'etiqueta'});
+      if (!bpc && q.etiqueta === 'Sí') W.push({m:`${L}: menor a 50 ppm pero tiene etiqueta BPC (§5.5)`, id: p+'etiqueta'});
+      if (bpc && q.etiqueta !== 'Sí' && blockVis(R, 'B')) W.push({m:`${L}: es BPC; falta colocar la etiqueta (§5.5)`, id: p+'etiqueta'});
     }
+    if ((q.marcadoBPC === 'Sí' || q.marcadoBPC === 'No') && q.concPpm !== '' && q.concPpm != null &&
+        (isBPC(q) !== (q.marcadoBPC === 'Sí')))
+      E.push({m:`${L}: marcado como ${q.marcadoBPC === 'Sí' ? 'BPC' : 'no BPC'} pero la concentración es ${q.concPpm} ppm (§4.7)`, id: p+'marcadoBPC'});
     if (q.tipoEquipo === 'Balastra' && (!q.fechaFab || q.fechaFab < '1980'))
       W.push({m:`${L}: balastra sin fecha o anterior a 1980; se considera BPC por norma (§5.4)`, id: p+'fechaFab'});
     if (q.fechaDesinc && q.fechaDesinc > '2025-12-31')
@@ -489,8 +496,7 @@ function parseReporteXML(text, DP){
       const el = child(parent, f.k);
       if (!el){ err(`${lab}: falta el elemento "${f.k}" (${f.r}).`); return; }
       const txt = el.textContent;
-      if (f.t === 'check1') obj[f.k] = txt === 'true';
-      else if (f.t === 'checks') obj[f.k] = txt ? txt.split('; ') : [];
+      if (f.t === 'checks') obj[f.k] = txt ? txt.split('; ') : [];
       else if (f.t === 'number') obj[f.k] = txt === '' ? '' : Number(txt);
       else obj[f.k] = txt;
     });
@@ -557,8 +563,8 @@ function auditarDocumento(R, opts = {}){
   const items = [];
   (opts.errs || []).forEach(e => items.push({nivel:'error', seccion:'Estructura', m:e.m}));
   const {E, W} = validateReport(R);
-  E.forEach(e => items.push({nivel:'error', seccion:seccionDe(e.id), m:e.m}));
-  W.forEach(w => items.push({nivel:'advertencia', seccion:seccionDe(w.id), m:w.m}));
+  E.forEach(e => items.push({nivel:'error', seccion:seccionDe(e.id), m:e.m, id:e.id}));
+  W.forEach(w => items.push({nivel:'advertencia', seccion:seccionDe(w.id), m:w.m, id:w.id}));
 
   if (opts.meta && opts.meta.validacion){
     const v = opts.meta.validacion;
@@ -654,7 +660,7 @@ function fieldHTML(f, id, val){
     case 'select':  c = `<select data-k="${k}"><option value="">— seleccionar —</option>${f.o.map(o => `<option${o===val?' selected':''}>${esc(o)}</option>`).join('')}</select>`; break;
     case 'radio':   c = `<div class="chk">${f.o.map(o => `<label><input type="radio" name="${id}" data-k="${k}" value="${esc(o)}"${o===val?' checked':''}> ${esc(o)}</label>`).join('')}</div>`; break;
     case 'checks':  c = `<div class="chk">${f.o.map(o => `<label><input type="checkbox" data-k="${k}" data-multi="1" value="${esc(o)}"${(val||[]).includes(o)?' checked':''}> ${esc(o)}</label>`).join('')}</div>`; break;
-    case 'check1':  c = `<label class="chk"><input type="checkbox" data-k="${k}"${val?' checked':''}> Sí</label>`; break;
+    case 'sino':    c = `<div class="chk">${['Sí','No'].map(o => `<label><input type="radio" name="${id}" data-k="${k}" value="${o}"${o===val?' checked':''}> ${o}</label>`).join('')}</div>`; break;
   }
   return `<div class="f" id="${id}">${head}${c}</div>`;
 }
@@ -982,13 +988,13 @@ renderAll();
 </script>
 <script>
 const NIVEL_TXT = {error:'Error', advertencia:'Advertencia', ok:'Correcto'};
+const ESTADO_TXT = {error:'Error', adv:'Advertencia', vacio:'Vacío', ok:'OK', na:'—'};
 const $ = id => document.getElementById(id);
 
 function mostrarError(msg){
   $('errorCarga').innerHTML = `<span style="color:var(--err)">${esc(msg)}</span>`;
-  ['resumen','datos','detalle'].forEach(id => $(id).hidden = true);
+  ['resumen','hallazgos','campos'].forEach(id => $(id).hidden = true);
 }
-
 function leerTexto(file){
   return new Promise((res, rej) => {
     const rd = new FileReader();
@@ -997,42 +1003,163 @@ function leerTexto(file){
     rd.readAsText(file, 'UTF-8');
   });
 }
-
-async function revisar(file){
-  $('errorCarga').textContent = '';
-  let texto;
-  try { texto = await leerTexto(file); } catch (e) { mostrarError('No se pudo leer el archivo.'); return; }
-  const nombre = file.name.toLowerCase();
-  let R = null, errs = [], meta = null, payload = null;
-
-  if (nombre.endsWith('.json') || texto.trim().startsWith('{')){
-    try {
-      const o = JSON.parse(texto);
-      const base = newReport();
-      R = {...base, ...o, decl: {...base.decl, ...(o.decl || {})}, ubi: {...base.ubi, ...(o.ubi || {})},
-           alc: {...base.alc, ...(o.alc || {})}, equipos: Array.isArray(o.equipos) ? o.equipos.map(q => ({...defaults(EQ), ...q})) : []};
-    } catch (e) { mostrarError('El JSON no es válido.'); return; }
-  } else if (nombre.endsWith('.xml') || texto.trim().startsWith('<')){
-    const p = parseReporteXML(texto, DOMParser);
-    if (!p.R){ mostrarError(p.errs[0] ? p.errs[0].m : 'No se pudo leer el XML.'); return; }
-    R = p.R; errs = p.errs; meta = p.meta;
-    payload = payloadDeXML(texto);
-  } else {
-    mostrarError('Formato no compatible. Suba un archivo .xml o .json generado por el formulario.');
-    return;
-  }
-
-  const au = auditarDocumento(R, {errs, meta, payload});
-  pintar(R, au);
+function leerBuffer(file){
+  return new Promise((res, rej) => {
+    const rd = new FileReader();
+    rd.onload = () => res(rd.result);
+    rd.onerror = () => rej(rd.error);
+    rd.readAsArrayBuffer(file);
+  });
 }
 
-function pintar(R, au){
-  ['resumen','datos','detalle'].forEach(id => $(id).hidden = false);
+/* ================= Lectura de Excel (plantilla oficial) ================= */
+function esFecha(v){ return Object.prototype.toString.call(v) === '[object Date]'; }
+function aFecha(v){
+  if (esFecha(v)) return v.toISOString().slice(0, 10);
+  if (typeof v === 'number'){
+    const p = XLSX.SSF.parse_date_code(v);
+    if (p) return p.y + '-' + String(p.m).padStart(2, '0') + '-' + String(p.d).padStart(2, '0');
+  }
+  return v == null ? '' : String(v);
+}
+function convertir(v, t){
+  if (v === null || v === undefined) return t === 'checks' ? [] : '';
+  switch (t){
+    case 'checks': return String(v).split(';').map(s => s.trim()).filter(Boolean);
+    case 'number': return v === '' ? '' : Number(v);
+    case 'year':   return v === '' ? '' : String(Math.round(Number(v)));
+    case 'date':   return aFecha(v);
+    default:       return esFecha(v) ? aFecha(v) : String(v).trim();
+  }
+}
+function leerExcel(buf){
+  if (typeof XLSX === 'undefined') throw new Error('No se cargó la librería de Excel. Revise su conexión a internet.');
+  const wb = XLSX.read(new Uint8Array(buf), {type:'array', cellDates:true});
+  const hd = wb.Sheets['Datos'], he = wb.Sheets['Equipos'];
+  if (!hd || !he) throw new Error('El Excel no tiene las hojas Datos y Equipos. Use la plantilla oficial.');
+  const errs = [];
+  const R = newReport();
+  R.id = 'xlsx-' + uid();
+  const filas = XLSX.utils.sheet_to_json(hd, {header:1, raw:true, defval:null});
+  const val = {};
+  filas.forEach(f => { if (typeof f[1] === 'string' && f[1]) val[f[1]] = f[3]; });
+  [...DECL, ...UBI].forEach(f => {
+    if (!(f.k in val)) errs.push({nivel:'error', m:`La hoja Datos no contiene el campo "${f.k}". Use la plantilla oficial.`});
+  });
+  DECL.forEach(f => R.decl[f.k] = convertir(val[f.k], f.t));
+  UBI.forEach(f => R.ubi[f.k] = convertir(val[f.k], f.t));
+  ALC.forEach(a => R.alc[a.k] = val['alc_' + a.k] === 'Sí');
+  R.firma = convertir(val.firma, 'text');
 
+  const eqRows = XLSX.utils.sheet_to_json(he, {header:1, raw:true, defval:null});
+  const claves = eqRows[0] || [];
+  if (!claves.includes('serie')) errs.push({nivel:'error', m:'La hoja Equipos no tiene las claves técnicas (fila 1). Use la plantilla oficial.'});
+  const campoEq = Object.fromEntries(EQ.map(f => [f.k, f]));
+  for (let r = 3; r < 8 && r < eqRows.length; r++){
+    const fila = eqRows[r] || [];
+    const q = defaults(EQ);
+    let hayDatos = false;
+    claves.forEach((k, c) => {
+      if (typeof k !== 'string' || !/^[a-zA-Z]+$/.test(k)) return;
+      const v = fila[c];
+      if (v !== null && v !== undefined && v !== '') hayDatos = true;
+      const f = campoEq[k];
+      q[k] = convertir(v, f ? f.t : 'text');
+    });
+    if (hayDatos) R.equipos.push(q);
+  }
+  return {R, errs};
+}
+
+/* ================= Revisión de archivo ================= */
+async function revisar(file){
+  $('errorCarga').textContent = '';
+  const nombre = file.name.toLowerCase();
+  let R = null, errs = [], meta = null, payload = null, origen = '';
+  try {
+    if (nombre.endsWith('.pdf')){
+      mostrarError('Los PDF no se validan directamente. Suba el XML o el Excel del mismo reporte.');
+      return;
+    }
+    if (nombre.endsWith('.xlsx') || nombre.endsWith('.xls')){
+      const x = leerExcel(await leerBuffer(file));
+      R = x.R; errs = x.errs; origen = 'Excel (plantilla)';
+    } else if (nombre.endsWith('.json')){
+      const o = JSON.parse(await leerTexto(file));
+      const base = newReport();
+      R = {...base, ...o, decl:{...base.decl, ...(o.decl || {})}, ubi:{...base.ubi, ...(o.ubi || {})},
+           alc:{...base.alc, ...(o.alc || {})},
+           equipos: Array.isArray(o.equipos) ? o.equipos.map(q => ({...defaults(EQ), ...q})) : []};
+      origen = 'JSON';
+    } else if (nombre.endsWith('.xml')){
+      const texto = await leerTexto(file);
+      const p = parseReporteXML(texto, DOMParser);
+      if (!p.R){ mostrarError(p.errs[0] ? p.errs[0].m : 'No se pudo leer el XML.'); return; }
+      R = p.R; errs = p.errs; meta = p.meta; payload = payloadDeXML(texto);
+      origen = 'XML';
+    } else {
+      mostrarError('Formato no compatible. Suba un XML, JSON o Excel de la plantilla.');
+      return;
+    }
+  } catch (e) {
+    mostrarError('No se pudo leer el archivo: ' + e.message);
+    return;
+  }
+  const au = auditarDocumento(R, {errs, meta, payload});
+  pintar(R, au, origen, file.name);
+}
+
+/* ================= Pintado ================= */
+function fmtVal(v){
+  if (Array.isArray(v)) return v.length ? v.join('; ') : '';
+  if (v === '' || v == null) return '';
+  return String(v);
+}
+function estadoCampo(items, id, v, req){
+  const its = items.filter(i => i.id === id);
+  if (fmtVal(v) === '') return req ? 'vacio' : 'na';
+  if (its.some(i => i.nivel === 'error')) return 'error';
+  if (its.some(i => i.nivel === 'advertencia')) return 'adv';
+  return 'ok';
+}
+function filasCampos(campos, obj, prefijo, items, R){
+  return campos.filter(f => fieldVisible(R, f)).map(f => {
+    const v = obj[f.k];
+    const est = estadoCampo(items, prefijo + f.k, v, f.req);
+    const txt = fmtVal(v) || '—';
+    const desc = f.desc ? `<div class="desc">${esc(f.desc)}</div>` : '';
+    return `<tr><td>${esc(f.l)}${f.req ? ' <b>*</b>' : ''}${desc}</td><td>${esc(txt)}</td><td>${esc(f.r)}</td><td class="e-${est}">${ESTADO_TXT[est]}</td></tr>`;
+  }).join('');
+}
+function tablaCampos(filas){
+  return `<table><thead><tr><th style="width:36%">Campo</th><th style="width:28%">Valor</th><th style="width:22%">Referencia NOM</th><th style="width:14%">Estado</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+function camposPintar(R, au){
+  const it = au.items;
+  const alcObj = Object.fromEntries(ALC.map(a => [a.k, R.alc[a.k] ? 'Sí' : 'No']));
+  const alcCampos = ALC.map(a => ({k:a.k, l:a.l, r:'Sección 2 (alcance)', req:0, t:'sino'}));
+  let h = '';
+  h += '<h3>1. Declarante y reporte</h3>' + tablaCampos(filasCampos(DECL, R.decl, 'd-', it, R));
+  h += '<h3>2. Alcance</h3>' + tablaCampos(filasCampos(alcCampos, alcObj, 'alc-', it, R));
+  h += '<h3>3. Ubicación y transporte</h3>' + tablaCampos(filasCampos(UBI, R.ubi, 'u-', it, R));
+  h += '<h3>4. Firma</h3>' + tablaCampos(filasCampos(
+        [{k:'firma', l:'Tipo de firma', r:'num. 6.2; num. 8.2.2 y 8.2.3', req:1, t:'radio'}], {firma: R.firma}, '', it, R));
+  if (!R.equipos.length) h += '<h3>5. Equipos</h3><p class="desc">El documento no tiene equipos.</p>';
+  R.equipos.forEach((q, i) => {
+    const campos = q.marcadoBPC ? EQ.concat([{k:'marcadoBPC', l:'Declarado como BPC', r:'num. 4.7; num. 5.3.1', req:0, t:'sino'}]) : EQ;
+    const calc = `<tr><td>Resultado BPC (50 ppm o más)</td><td>${blank(q.concPpm) ? '—' : (isBPC(q) ? 'Sí' : 'No')}</td><td>num. 4.7; num. 5.3.1</td><td class="e-na">Calculado</td></tr>`;
+    h += `<h3>5.${i + 1} ${esc(eqTitle(q, i))}</h3>` + tablaCampos(filasCampos(campos, q, 'e' + i + '-', it, R) + calc);
+  });
+  $('camposBody').innerHTML = h;
+}
+function blank(v){ return v === '' || v == null; }
+
+function pintar(R, au, origen, nombre){
+  ['resumen','hallazgos','campos'].forEach(id => $(id).hidden = false);
   const estado = au.nErr ? `<span class="badge bErr">Con ${au.nErr} error(es)</span>`
     : au.nWarn ? `<span class="badge bWarn">Válido con ${au.nWarn} advertencia(s)</span>`
     : '<span class="badge bOk">Documento válido</span>';
-  $('cabecera').innerHTML = estado + `<span class="desc">Revisado el ${esc(new Date().toLocaleString('es-MX'))}</span>`;
+  $('cabecera').innerHTML = estado + `<span class="desc">Origen: ${esc(origen)} · archivo ${esc(nombre)} · revisado ${esc(new Date().toLocaleString('es-MX'))}</span>`;
 
   const f = au.firma;
   let fb;
@@ -1042,31 +1169,12 @@ function pintar(R, au){
   else fb = `<div class="firma firma-mal"><b>Firma no válida.</b> ${!f.digestOk ? 'El contenido cambió después de firmarse.' : ''} ${!f.sigOk ? 'La firma no corresponde al certificado.' : ''} ${f && f.error ? esc(f.error) : ''}</div>`;
   $('firmaBox').innerHTML = fb;
 
-  const alcance = ALC.filter(a => R.alc[a.k]).map(a => a.l).join('; ') || 'ninguno';
-  $('datosBody').innerHTML = `
-    <table>
-      <tr><th style="width:260px">Razón social</th><td>${esc(R.decl.razonSocial || '-')}</td></tr>
-      <tr><th>RFC</th><td>${esc(R.decl.rfc || '-')}</td></tr>
-      <tr><th>Año que reporta</th><td>${esc(R.decl.periodo || '-')}</td></tr>
-      <tr><th>Ubicación</th><td>${esc(R.ubi.nombreUbi || '-')} · ${esc(R.ubi.direccion || '-')}</td></tr>
-      <tr><th>Alcance</th><td>${esc(alcance)}</td></tr>
-      <tr><th>Tipo de firma</th><td>${esc(R.firma || '-')}</td></tr>
-      <tr><th>Logotipo</th><td>${R.logo ? 'Incluido' : 'No incluido'}</td></tr>
-    </table>
-    <h3 style="font-size:13px;color:var(--p);margin:14px 0 6px">Equipos (${R.equipos.length})</h3>
-    <table>
-      <thead><tr><th>#</th><th>Tipo</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Concentración (ppm)</th><th>BPC</th></tr></thead>
-      <tbody>${R.equipos.map((q, i) => `
-        <tr><td>${i+1}</td><td>${esc(q.tipoEquipo || '-')}</td><td>${esc(q.marca || '-')}</td><td>${esc(q.modelo || '-')}</td>
-            <td>${esc(q.serie || '-')}</td><td>${esc(q.concPpm === '' ? '-' : q.concPpm)}</td>
-            <td>${q.concPpm === '' || q.concPpm == null ? '-' : (isBPC(q) ? 'Sí' : 'No')}</td></tr>`).join('') || '<tr><td colspan="7">Sin equipos</td></tr>'}
-      </tbody>
-    </table>`;
-
   const orden = {error:0, advertencia:1, ok:2};
-  const items = [...au.items].sort((a,b) => orden[a.nivel] - orden[b.nivel]);
+  const items = [...au.items].sort((a, b) => orden[a.nivel] - orden[b.nivel]);
   $('tbHallazgos').innerHTML = items.map(it => `
     <tr><td class="nivel n-${it.nivel}">${NIVEL_TXT[it.nivel]}</td><td>${esc(it.seccion || '-')}</td><td>${esc(it.m)}</td></tr>`).join('');
+
+  camposPintar(R, au);
 }
 
 $('fDoc').addEventListener('change', e => { const f = e.target.files[0]; if (f) revisar(f); });
