@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reporte BPC · NOM-133-SEMARNAT-2015</title>
+<title>Reportes BPC · NOM-133-SEMARNAT-2015</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
 <style>
@@ -12,13 +12,13 @@
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#1d1d1f;font-size:14px}
 header{background:#000;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 header h1{font-size:16px;margin:0;font-weight:bold}
+header a{color:#fff;font-size:13px}
 main{display:grid;grid-template-columns:1fr 340px;gap:18px;padding:18px;max-width:1320px;margin:auto}
 .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
 h2{color:var(--p);font-size:15px;margin:0 0 10px;border-bottom:2px solid var(--p);padding-bottom:4px}
 h3{font-size:13px;color:var(--p);margin:12px 0 6px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 14px}
 .f{display:flex;flex-direction:column;gap:3px}
-.f.full{grid-column:1/-1}
 .l{font-weight:bold;font-size:13px}
 .req{color:var(--err)}
 .ref{font-size:11px;color:#6b5b95}
@@ -45,12 +45,59 @@ button.danger{background:#fff;color:var(--err);border:1px solid var(--err)}
 .logo-prev{max-height:60px;background:#fff;border:1px dashed #bbb;padding:4px}
 #msg{color:#ccc;font-size:12px}
 @media(max-width:900px){main{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.panel{position:static}}
+
+:root{--p:#674EA7;--bg:#f7f5fb;--line:#d9d2e9;--err:#b42318;--warn:#b54708;--ok:#1d6b00}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#1d1d1f;font-size:14px}
+header{background:#000;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:bold}
+header a{color:#fff;font-size:13px}
+.vmain{max-width:1100px;margin:auto;padding:18px}
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+h2{color:var(--p);font-size:15px;margin:0 0 10px;border-bottom:2px solid var(--p);padding-bottom:4px}
+.desc{font-size:12px;color:#555}
+.badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;margin-right:6px}
+.bErr{background:#fde8e6;color:var(--err)}
+.bWarn{background:#fef0c7;color:var(--warn)}
+.bOk{background:#e8fbe0;color:var(--ok)}
+.bNd{background:#eee;color:#555}
+button{background:var(--p);color:#fff;border:0;border-radius:5px;padding:8px 12px;cursor:pointer;font:inherit}
+button.sec{background:#fff;color:var(--p);border:1px solid var(--p)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f1ecfa;color:var(--p)}
+.nivel{font-weight:bold;white-space:nowrap}
+.n-error{color:var(--err)} .n-advertencia{color:var(--warn)} .n-ok{color:var(--ok)}
+.firma{border-radius:8px;padding:12px;margin:8px 0;font-size:13px}
+.firma-ok{background:#e8fbe0;border:1px solid #9bd98a}
+.firma-mal{background:#fde8e6;border:1px solid #f2a39b}
+.firma-nd{background:#f2f2f2;border:1px solid #ccc}
+@media print{
+  header,.noprint{display:none!important}
+  body{background:#fff}
+  .card{border:none;padding:0;margin:0 0 12px}
+}
+
+.tab{background:#000;color:#fff;border:1px solid #fff}
+.tab.on{background:var(--p);border-color:var(--p)}
+.barra{background:#000;color:#fff;padding:10px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#msg{color:#ccc}
+@media print{ body.modo-val #vistaFormulario{display:none!important} }
 </style>
 </head>
 <body>
 <header>
-  <h1>Reporte BPC · NOM-133-SEMARNAT-2015</h1>
-  <div class="toolbar">
+  <h1>Reportes BPC · NOM-133-SEMARNAT-2015</h1>
+  <nav>
+    <button class="tab on" data-tab="form" type="button">Formulario de captura</button>
+    <button class="tab" data-tab="val" type="button">Validador de documentos</button>
+  </nav>
+</header>
+
+<div id="vistaFormulario">
+  <div class="barra">
+    <div class="toolbar" style="margin:0">
     <select id="lista" class="sel" aria-label="Reportes guardados"></select>
     <button class="sec" id="bNuevo">Nuevo</button>
     <button id="bGuardar">Guardar</button>
@@ -61,8 +108,8 @@ button.danger{background:#fff;color:var(--err);border:1px solid var(--err)}
     <input type="file" id="fImpJ" accept="application/json" hidden>
     <span id="msg"></span>
   </div>
-</header>
-<main>
+  </div>
+  <main>
   <div>
     <section class="card" id="sLogo">
       <h2>1. Declarante y logotipo</h2>
@@ -70,18 +117,18 @@ button.danger{background:#fff;color:var(--err);border:1px solid var(--err)}
         <img id="logoPrev" class="logo-prev" alt="Logotipo del declarante" hidden>
         <input type="file" id="fLogo" accept="image/png,image/jpeg">
       </div>
-      <div id="declGrid" data-scope="decl"></div>
+      <div id="declGrid"></div>
     </section>
 
     <section class="card">
       <h2>2. Alcance del reporte</h2>
-      <div class="chk" id="alc" data-scope="alc"></div>
+      <div class="chk" id="alc"></div>
       <p class="desc">Según lo que marque, aparecen o se ocultan los bloques de la norma.</p>
     </section>
 
     <section class="card">
       <h2>3. Ubicación y equipos</h2>
-      <div id="ubi" data-scope="ubi"></div>
+      <div id="ubi"></div>
       <h3>Equipos</h3>
       <div id="eqs"></div>
       <div class="toolbar"><button id="bAddEq">+ Agregar equipo</button></div>
@@ -89,7 +136,7 @@ button.danger{background:#fff;color:var(--err);border:1px solid var(--err)}
 
     <section class="card">
       <h2>4. Firma y reporte</h2>
-      <div id="firma" data-scope="firma"></div>
+      <div id="firma"></div>
       <div class="toolbar">
         <button id="bXML">Generar XML</button>
         <button id="bPDF">Generar PDF</button>
@@ -98,9 +145,10 @@ button.danger{background:#fff;color:var(--err);border:1px solid var(--err)}
   </div>
 
   <aside class="panel card">
-    <h2>Validación</h2>
+    <h2>Avisos de captura</h2>
     <div id="status"></div>
     <div id="val"></div>
+    <p class="desc">Estos avisos ayudan mientras captura. La revisión de un documento terminado se hace en el validador.</p>
   </aside>
 </main>
 
@@ -119,7 +167,53 @@ button.danger{background:#fff;color:var(--err);border:1px solid var(--err)}
     </div>
   </div>
 </div>
+
+
+</div>
+
+<div class="vmain" id="vistaValidador" hidden>
+
+  <section class="card noprint">
+    <h2>Documento a revisar</h2>
+    <p class="desc">Suba el XML generado por el formulario, o el JSON de respaldo. El PDF es solo la versión impresa del XML y no se revisa directamente.</p>
+    <div class="toolbar">
+      <input type="file" id="fDoc" accept=".xml,.json,application/xml,application/json">
+      <button class="sec" id="bImp">Imprimir informe</button>
+    </div>
+    <div id="errorCarga" class="desc"></div>
+  </section>
+
+  <section class="card" id="resumen" hidden>
+    <h2>Resultado</h2>
+    <div id="cabecera"></div>
+    <div id="firmaBox"></div>
+  </section>
+
+  <section class="card" id="datos" hidden>
+    <h2>Datos del documento</h2>
+    <div id="datosBody"></div>
+  </section>
+
+  <section class="card" id="detalle" hidden>
+    <h2>Hallazgos</h2>
+    <table>
+      <thead><tr><th style="width:110px">Resultado</th><th style="width:140px">Sección</th><th>Descripción</th></tr></thead>
+      <tbody id="tbHallazgos"></tbody>
+    </table>
+  </section>
+
+</div>
+
 <script>
+/* bpc_reglas.js
+ * Reglas compartidas por bpc_formulario.html (captura) y bpc_validador.html (revisión).
+ * Requiere node-forge (window.forge) cargado antes de este archivo.
+ * Todas las funciones reciben el reporte R como parámetro; no leen el DOM.
+ */
+
+const NS_BPC = 'urn:niuniu:bpc:nom133:1.0';
+const FIRMA_EF = 'Firma electrónica (e.firma)';
+
 /* ================= Catálogos ================= */
 const FLUIDOS = ['ACECLOR','APIROLO','AROCLOR','ASBESTOL','ASKAREL','BAKOLA 131','CLOPHEN','CHLOREXTOL','CLORINOL','DELOR','DIACLOR','DK','DP','DYKANOL','EEC-118','ELECTROPHENYL','ELEMEX','EUCAREL','FENCLOR','HYVOL','INCLOR','INERTEEN','KANECHLOR','KENNECHLOR','MCS-1489','MONTAR','NEPOLIN','NO FLAMOL','PCB','PHENOCLOR','PYDRAUL','PYRALENE','PYRANOL','PYROCLOR','SAFT-KUHL','SANTOTHERN','SAT-T-AMERICA','SOVIOL','SOVTOL','SOROL','THERMINOL','LFAF','LFAN','LFWN','LNP','LNS','LNW','LNWN','Ninguno identificado (sin placa)','Otro'];
 const BLK = {A:'Datos generales',B:'Identificación del equipo',C:'Análisis de laboratorio',D:'Bitácora y mantenimiento',E:'Desincorporación, tratamiento y eliminación',F:'Transporte y manejo',G:'Mantenimiento de transformadores en sitio',H:'Reportes y conservación'};
@@ -134,7 +228,7 @@ const ALC = [
 ];
 
 /* ================= Campos (cada uno con su referencia a la norma) ================= */
-// t: text | number | date | textarea | select | radio | checks | check1
+// t: text | number | year | date | textarea | select | radio | checks | check1
 // b: bloque de la norma · w: condición extra de alcance · req: obligatorio
 const DECL = [
   {k:'razonSocial',b:'A',l:'Razón social del poseedor',r:'§4.12; Apéndice A',t:'text',req:1},
@@ -210,16 +304,312 @@ const LIMPIAR_UBI = ['manifiesto','analPrev','analTres','resG'];
 
 /* ================= Utilidades ================= */
 function uid(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-function esc(s){ return String(s ?? '').replace(/§ ?/g, 'num. ').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function nr(t){ return String(t).replace(/§ ?/g, 'num. '); }
+function esc(s){ return nr(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function defaults(list){ return Object.fromEntries(list.map(f => [f.k, f.t==='check1' ? false : f.t==='checks' ? [] : ''])); }
-const DEF_EQ = defaults(EQ);
 function newReport(){
   return { id: uid(), nombre: 'Nuevo reporte', logo: null, decl: defaults(DECL),
            alc: {op:false,alm:false,res:false,tra:false,tsit:false},
-           ubi: defaults(UBI), equipos: [], firma: '', updated: '' };
+           ubi: defaults(UBI), equipos: [], firma: '', efirma: null, updated: '' };
 }
+function digestOf(str){ const m = forge.md.sha256.create(); m.update(str, 'utf8'); return m.digest().toHex(); }
+
+/* ================= Alcance y visibilidad ================= */
+function blockVis(R, b){
+  const a = R.alc;
+  switch(b){
+    case 'A': case 'H': return true;
+    case 'B': return !!(a.op || a.alm);
+    case 'C': return !!(a.op || a.alm || a.res);
+    case 'D': return !!a.op;
+    case 'E': return !!(a.op || a.alm || a.res || a.tra);
+    case 'F': return !!a.res;
+    case 'G': return !!a.tsit;
+  }
+  return true;
+}
+function fieldVisible(R, f){ return (!f.b || blockVis(R, f.b)) && (!f.w || !!R.alc[f.w]); }
+function isBPC(q){ return q.concPpm !== '' && q.concPpm != null && Number(q.concPpm) >= 50; }
+function eqTitle(q, i){ return `Equipo ${i+1}: ${q.tipoEquipo || 'tipo sin definir'} · ${q.marca || '-'} ${q.modelo || ''} · serie ${q.serie || '-'}`; }
+
+/* ================= Reglas de validación ================= */
+function validateReport(R){
+  const E = [], W = [];
+  const chk = (list, obj, pref, lab) => {
+    for (const f of list){
+      if (!fieldVisible(R, f)) continue;
+      const v = obj[f.k];
+      let empty;
+      if (f.t === 'checks') empty = !(v && v.length);
+      else if (f.t === 'check1') empty = !v;
+      else empty = (v === '' || v == null);
+      if (f.req && empty) E.push({m: `${lab}: falta "${f.l}" (${f.r})`, id: pref + f.k});
+    }
+  };
+  chk(DECL, R.decl, 'd-', 'Declarante');
+  chk(UBI, R.ubi, 'u-', 'Ubicación');
+
+  if (R.decl.fechaReporte){
+    const m = new Date(R.decl.fechaReporte + 'T12:00:00').getMonth() + 1;
+    if (m < 3 || m > 6) W.push({m:'Fecha de reporte fuera del periodo 1 de marzo al 30 de junio (§6.4)', id:'d-fechaReporte'});
+  }
+  if (blockVis(R, 'G') && R.ubi.resG !== '' && R.ubi.resG != null && Number(R.ubi.resG) >= 50)
+    E.push({m:'Aceite de transformador con 50 ppm o más: no es libre de BPC (§6.8)', id:'u-resG'});
+  if (!ALC.some(a => R.alc[a.k])) W.push({m:'No se ha seleccionado alcance (sección 2)', id:'alc'});
+
+  const vistas = {};
+  (R.equipos || []).forEach((q, i) => {
+    const L = 'Equipo ' + (i+1), p = 'e' + i + '-';
+    chk(EQ, q, p, L);
+    if (q.serie){
+      const s = String(q.serie).trim().toUpperCase();
+      if (vistas[s] !== undefined) E.push({m:`${L}: serie repetida con Equipo ${vistas[s]+1} (§6.2)`, id: p+'serie'});
+      else vistas[s] = i;
+    }
+    if (q.concPpm !== '' && q.concPpm != null){
+      const bpc = isBPC(q);
+      if (!bpc && q.etiqueta) W.push({m:`${L}: menor a 50 ppm pero tiene etiqueta BPC (§5.5)`, id: p+'etiqueta'});
+      if (bpc && !q.etiqueta && blockVis(R, 'B')) W.push({m:`${L}: es BPC; falta colocar la etiqueta (§5.5)`, id: p+'etiqueta'});
+    }
+    if (q.tipoEquipo === 'Balastra' && (!q.fechaFab || q.fechaFab < '1980'))
+      W.push({m:`${L}: balastra sin fecha o anterior a 1980; se considera BPC por norma (§5.4)`, id: p+'fechaFab'});
+    if (q.fechaDesinc && q.fechaDesinc > '2025-12-31')
+      E.push({m:`${L}: desincorporación posterior al año límite 2025 (§6.5)`, id: p+'fechaDesinc'});
+    if (q.estado === 'En operación' && isBPC(q) && !q.fechaDesinc && blockVis(R, 'E'))
+      W.push({m:`${L}: BPC en operación sin fecha de desincorporación (§6.5)`, id: p+'fechaDesinc'});
+  });
+
+  if (!R.firma) E.push({m:'Seleccione el tipo de firma (sección 4)', id:'firma'});
+  if (R.firma === FIRMA_EF && !R.efirma) E.push({m:'Cargue y firme la e-firma (sección 4)', id:'firma'});
+  if (!R.logo) W.push({m:'Sin logotipo: el PDF saldrá sin logo (sección 1)', id:'sLogo'});
+  return {E, W};
+}
+
+/* ================= XML ================= */
+function xmlVal(v){
+  if (Array.isArray(v)) return v.join('; ');
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  return v == null ? '' : String(v);
+}
+function xe(f, val){ return `<${f.k} ref="${esc(f.r)}">${esc(xmlVal(val))}</${f.k}>`; }
+
+// conFirma=false produce la "carga útil" que se firma; no incluye firmaElectronica.
+function buildXML(R, conFirma = true){
+  const {E, W} = validateReport(R);
+  const estado = E.length ? 'incompleto' : W.length ? 'con_advertencias' : 'completo';
+  const stamp = R.efirma ? R.efirma.stamp : new Date().toISOString();
+  const L = ['<?xml version="1.0" encoding="UTF-8"?>',
+    `<reporteBPC xmlns="${NS_BPC}" version="1.0" norma="NOM-133-SEMARNAT-2015" id="${esc(R.id)}" generado="${esc(stamp)}">`,
+    `  <declarante firma="${esc(R.firma)}">`];
+  DECL.filter(f => fieldVisible(R, f)).forEach(f => L.push('    ' + xe(f, R.decl[f.k])));
+  if (R.logo) L.push(`    <logo tipo="${esc(R.logo.mime)}" encoding="base64">${R.logo.dataURL.split(',')[1]}</logo>`);
+  L.push('  </declarante>');
+  L.push(`  <alcance op="${!!R.alc.op}" alm="${!!R.alc.alm}" res="${!!R.alc.res}" tra="${!!R.alc.tra}" tsit="${!!R.alc.tsit}">`);
+  BLOQUES.forEach(b => L.push(`    <bloque id="${b}" aplica="${blockVis(R, b)}"/>`));
+  L.push('  </alcance>', '  <ubicacion>');
+  UBI.filter(f => fieldVisible(R, f)).forEach(f => L.push('    ' + xe(f, R.ubi[f.k])));
+  L.push('  </ubicacion>', '  <equipos>');
+  (R.equipos || []).forEach((q, i) => {
+    L.push(`    <equipo id="E${i+1}" esBPC="${isBPC(q)}">`);
+    EQ.filter(f => fieldVisible(R, f)).forEach(f => L.push('      ' + xe(f, q[f.k])));
+    L.push('    </equipo>');
+  });
+  L.push('  </equipos>');
+  if (conFirma && R.efirma){
+    L.push(`  <firmaElectronica algoritmo="RSA-SHA256" digest="${esc(R.efirma.digest)}" cn="${esc(R.efirma.cn)}" serie="${esc(R.efirma.serie)}" vigencia="${esc(R.efirma.vigencia)}">`,
+      `    <certificado encoding="base64">${R.efirma.certDer}</certificado>`,
+      `    <firma encoding="base64">${R.efirma.firma}</firma>`,
+      '  </firmaElectronica>');
+  }
+  L.push(`  <validacion estado="${estado}" errores="${E.length}" advertencias="${W.length}"/>`, '</reporteBPC>');
+  return L.join('\n');
+}
+
+// Quita el bloque de firma del texto original: así se obtiene exactamente la carga útil firmada.
+function payloadDeXML(xmlText){
+  return xmlText.replace(/\n  <firmaElectronica[\s\S]*?<\/firmaElectronica>/, '');
+}
+
+/* ================= Firma ================= */
+// Firma el texto de la carga útil con la llave (objeto de forge) y devuelve los datos públicos.
+function firmarPayload(payload, key, cert, stamp){
+  const cnF = cert.subject.getField('CN');
+  const m = forge.md.sha256.create(); m.update(payload, 'utf8');
+  return {
+    stamp,
+    cn: cnF ? cnF.value : '',
+    serie: String(cert.serialNumber).toLowerCase(),
+    vigencia: cert.validity.notAfter.toISOString().slice(0, 10),
+    certDer: forge.util.encode64(forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes()),
+    digest: digestOf(payload),
+    firma: forge.util.encode64(key.sign(m))
+  };
+}
+
+// Verifica digest y firma de un bloque efirma contra un texto de carga útil.
+function verificarFirma(payload, ef){
+  const res = {digestOk:false, sigOk:false, certCoincide:false, vigenciaVencida: false, cn: ef.cn, serie: ef.serie, error: ''};
+  res.vigenciaVencida = String(ef.vigencia) < new Date().toISOString().slice(0, 10);
+  try {
+    res.digestOk = digestOf(payload) === ef.digest;
+    const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(forge.util.decode64(ef.certDer)));
+    const m = forge.md.sha256.create(); m.update(payload, 'utf8');
+    res.sigOk = cert.publicKey.verify(m.digest().getBytes(), forge.util.decode64(ef.firma));
+    res.certCoincide = String(cert.serialNumber).toLowerCase() === String(ef.serie).toLowerCase();
+  } catch (e) {
+    res.error = 'No se pudo leer el certificado o la firma.';
+  }
+  return res;
+}
+
+/* ================= Lectura de XML ================= */
+// Devuelve {R, errs, meta}. errs son problemas de estructura; meta guarda lo que el archivo declara.
+function parseReporteXML(text, DP){
+  const errs = [];
+  const doc = new DP().parseFromString(text, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) return {R:null, errs:[{nivel:'error', m:'El archivo no es un XML válido.'}], meta:null};
+  const root = doc.documentElement;
+  if (!root || root.localName !== 'reporteBPC') return {R:null, errs:[{nivel:'error', m:'La raíz del documento no es reporteBPC.'}], meta:null};
+  const err = m => errs.push({nivel:'error', m});
+  if (root.namespaceURI !== NS_BPC) err('Namespace incorrecto o ausente (se esperaba ' + NS_BPC + ').');
+  if (root.getAttribute('norma') !== 'NOM-133-SEMARNAT-2015') err('La norma declarada no es NOM-133-SEMARNAT-2015.');
+
+  const kids = el => Array.from(el.childNodes).filter(n => n.nodeType === 1);
+  const child = (el, name) => (el ? kids(el).find(n => n.localName === name) : null) || null;
+
+  const R = newReport();
+  R.id = root.getAttribute('id') || R.id;
+  const alc = child(root, 'alcance');
+  if (!alc) err('Falta el bloque alcance.');
+  else ALC.forEach(a => R.alc[a.k] = alc.getAttribute(a.k) === 'true');
+
+  const readFields = (parent, list, obj, lab) => {
+    list.forEach(f => {
+      if (!fieldVisible(R, f)) return;
+      const el = child(parent, f.k);
+      if (!el){ err(`${lab}: falta el elemento "${f.k}" (${f.r}).`); return; }
+      const txt = el.textContent;
+      if (f.t === 'check1') obj[f.k] = txt === 'true';
+      else if (f.t === 'checks') obj[f.k] = txt ? txt.split('; ') : [];
+      else if (f.t === 'number') obj[f.k] = txt === '' ? '' : Number(txt);
+      else obj[f.k] = txt;
+    });
+  };
+
+  if (alc) kids(alc).forEach(b => {
+    const id = b.getAttribute('id'), ap = b.getAttribute('aplica') === 'true';
+    if (blockVis(R, id) !== ap) err(`El bloque ${id} no corresponde al alcance declarado.`);
+  });
+
+  const decl = child(root, 'declarante');
+  if (!decl) err('Falta el bloque declarante.');
+  else {
+    R.firma = decl.getAttribute('firma') || '';
+    readFields(decl, DECL, R.decl, 'Declarante');
+    const logo = child(decl, 'logo');
+    if (logo) R.logo = {mime: logo.getAttribute('tipo'), dataURL: 'data:' + logo.getAttribute('tipo') + ';base64,' + logo.textContent.trim()};
+  }
+
+  const ubi = child(root, 'ubicacion');
+  if (!ubi) err('Falta el bloque ubicacion.');
+  else readFields(ubi, UBI, R.ubi, 'Ubicación');
+
+  const meta = {equipos: [], validacion: null};
+  const eqs = child(root, 'equipos');
+  if (!eqs) err('Falta el bloque equipos.');
+  else kids(eqs).forEach((eq, i) => {
+    const q = defaults(EQ);
+    readFields(eq, EQ, q, `Equipo ${i+1}`);
+    R.equipos.push(q);
+    meta.equipos.push({id: eq.getAttribute('id'), esBPC: eq.getAttribute('esBPC')});
+  });
+
+  const fe = child(root, 'firmaElectronica');
+  if (fe){
+    R.efirma = {
+      stamp: root.getAttribute('generado'),
+      cn: fe.getAttribute('cn'), serie: fe.getAttribute('serie'),
+      vigencia: fe.getAttribute('vigencia'), digest: fe.getAttribute('digest'),
+      certDer: (child(fe, 'certificado') ? child(fe, 'certificado').textContent : '').trim(),
+      firma: (child(fe, 'firma') ? child(fe, 'firma').textContent : '').trim()
+    };
+  }
+
+  const va = child(root, 'validacion');
+  if (va) meta.validacion = {estado: va.getAttribute('estado'), errores: Number(va.getAttribute('errores')), advertencias: Number(va.getAttribute('advertencias'))};
+  return {R, errs, meta};
+}
+
+/* ================= Auditoría (común a XML y JSON) ================= */
+function seccionDe(id){
+  if (!id) return '';
+  if (id === 'alc') return 'Alcance';
+  if (id === 'firma') return 'Firma';
+  if (id === 'sLogo') return 'Logotipo';
+  if (id.startsWith('d-')) return 'Declarante';
+  if (id.startsWith('u-')) return 'Ubicación';
+  const m = id.match(/^e(\d+)-/);
+  return m ? 'Equipo ' + (Number(m[1]) + 1) : '';
+}
+
+// opts: {errs, meta, payload (texto firmado; si no hay, se regenera desde R)}
+function auditarDocumento(R, opts = {}){
+  const items = [];
+  (opts.errs || []).forEach(e => items.push({nivel:'error', seccion:'Estructura', m:e.m}));
+  const {E, W} = validateReport(R);
+  E.forEach(e => items.push({nivel:'error', seccion:seccionDe(e.id), m:e.m}));
+  W.forEach(w => items.push({nivel:'advertencia', seccion:seccionDe(w.id), m:w.m}));
+
+  if (opts.meta && opts.meta.validacion){
+    const v = opts.meta.validacion;
+    if (v.errores !== E.length || v.advertencias !== W.length)
+      items.push({nivel:'advertencia', seccion:'Estructura', m:'El resumen de validación del archivo no coincide con su contenido; el archivo pudo modificarse.'});
+  }
+  if (opts.meta && opts.meta.equipos){
+    opts.meta.equipos.forEach((eq, i) => {
+      const q = (R.equipos || [])[i];
+      if (q && eq.esBPC !== String(isBPC(q)))
+        items.push({nivel:'error', seccion:'Equipo ' + (i+1), m:`El atributo esBPC (${eq.esBPC}) no coincide con la concentración declarada (§4.7).`});
+    });
+  }
+
+  let firma = null;
+  if (R.efirma){
+    const payload = opts.payload != null ? opts.payload : buildXML(R, false);
+    firma = verificarFirma(payload, R.efirma);
+    if (firma.error) items.push({nivel:'error', seccion:'Firma', m:firma.error});
+    if (!firma.digestOk) items.push({nivel:'error', seccion:'Firma', m:'El contenido no coincide con lo firmado: el documento fue modificado después de firmarse.'});
+    if (!firma.sigOk && !firma.error) items.push({nivel:'error', seccion:'Firma', m:'La firma electrónica no es válida.'});
+    if (!firma.certCoincide && !firma.error) items.push({nivel:'error', seccion:'Firma', m:'El número de serie del certificado no coincide con la firma.'});
+    if (firma.vigenciaVencida) items.push({nivel:'advertencia', seccion:'Firma', m:'El certificado de la e-firma está vencido.'});
+    if (R.firma !== FIRMA_EF) items.push({nivel:'advertencia', seccion:'Firma', m:'El documento tiene firma electrónica, pero el tipo de firma declarado es otro.'});
+    if (firma.digestOk && firma.sigOk && firma.certCoincide)
+      items.push({nivel:'ok', seccion:'Firma', m:`Firma válida · firmante ${firma.cn || '-'} · serie ${R.efirma.serie}`});
+  } else if (R.firma === FIRMA_EF){
+    // ya reportado en validateReport como error
+  }
+  if (!items.some(i => i.nivel === 'error')) items.push({nivel:'ok', seccion:'Contenido', m:'Sin errores de contenido.'});
+  return {
+    items, firma,
+    nErr: items.filter(i => i.nivel === 'error').length,
+    nWarn: items.filter(i => i.nivel === 'advertencia').length
+  };
+}
+
+if (typeof module !== 'undefined') module.exports = {
+  NS_BPC, FIRMA_EF, DECL, UBI, EQ, ALC, BLOQUES, LIMPIAR_EQ, LIMPIAR_UBI, FLUIDOS, BLK, YEARS,
+  nr, esc, defaults, newReport, digestOf, blockVis, fieldVisible, isBPC, eqTitle,
+  validateReport, buildXML, payloadDeXML, firmarPayload, verificarFirma, parseReporteXML, auditarDocumento, seccionDe
+};
+
+</script>
+<script>
+/* ================= Estado y constantes del formulario ================= */
+const DEF_EQ = defaults(EQ);
+const DEF_UBI = defaults(UBI);
 let S = newReport();
 let saveT = null;
+let EF = {cert: null, keyBin: null};
 
 /* ================= Base de datos local (IndexedDB) ================= */
 const DBP = new Promise((res, rej) => {
@@ -249,24 +639,6 @@ async function saveNow(){
 }
 function scheduleSave(){ clearTimeout(saveT); setMsg('Cambios sin guardar…'); saveT = setTimeout(saveNow, 800); }
 
-/* ================= Lógica de alcance y reglas ================= */
-function blockVis(b){
-  const a = S.alc;
-  switch(b){
-    case 'A': case 'H': return true;
-    case 'B': return a.op || a.alm;
-    case 'C': return a.op || a.alm || a.res;
-    case 'D': return a.op;
-    case 'E': return a.op || a.alm || a.res || a.tra;
-    case 'F': return a.res;
-    case 'G': return a.tsit;
-  }
-  return true;
-}
-function fieldVisible(f){ return (!f.b || blockVis(f.b)) && (!f.w || S.alc[f.w]); }
-function eqTitle(q, i){ return `Equipo ${i+1}: ${q.tipoEquipo || 'tipo sin definir'} · ${q.marca || '-'} ${q.modelo || ''} · serie ${q.serie || '-'}`; }
-function isBPC(q){ return q.concPpm !== '' && q.concPpm != null && Number(q.concPpm) >= 50; }
-
 /* ================= Render ================= */
 function fieldHTML(f, id, val){
   const head = `<label class="l">${esc(f.l)}${f.req?' <span class="req">*</span>':''}</label>`
@@ -289,7 +661,7 @@ function fieldHTML(f, id, val){
 function renderGroup(list, prefix, obj){
   let html = '', open = false, cur = null;
   for (const f of list){
-    if (!fieldVisible(f)) continue;
+    if (!fieldVisible(S, f)) continue;
     if (f.b !== cur){
       if (open) html += '</div>';
       cur = f.b;
@@ -326,72 +698,19 @@ function renderAll(){
     : '<p class="desc">Sin equipos. Agregue uno con el botón de abajo.</p>';
   document.getElementById('firma').innerHTML = fieldHTML(
     {k:'firma',l:'Tipo de firma',r:'§6.2; §8.2.2 y §8.2.3 (documentos firmados)',t:'radio',
-     o:['Autógrafa','Bloque en blanco','Firma electrónica (e.firma)'],req:1}, 'firma', S.firma) + (S.firma === 'Firma electrónica (e.firma)'
+     o:['Autógrafa','Bloque en blanco',FIRMA_EF],req:1}, 'firma', S.firma)
+    + (S.firma === FIRMA_EF
       ? `<div class="toolbar"><button class="sec" id="bEF">${S.efirma ? 'Cambiar e-firma' : 'Cargar e-firma'}</button><span class="desc">${S.efirma ? 'Firmante: ' + esc(S.efirma.cn) + ' · vigencia ' + esc(S.efirma.vigencia) : 'Sin firma cargada'}</span></div>`
       : '');
   renderVal();
 }
 
-/* ================= Validación ================= */
-function validate(){
-  const E = [], W = [];
-  const chk = (list, obj, pref, lab) => {
-    for (const f of list){
-      if (!fieldVisible(f)) continue;
-      const v = obj[f.k];
-      let empty;
-      if (f.t === 'checks') empty = !(v && v.length);
-      else if (f.t === 'check1') empty = !v;
-      else empty = (v === '' || v == null);
-      if (f.req && empty) E.push({m: `${lab}: falta "${f.l}" (${f.r})`, id: pref + f.k});
-    }
-  };
-  chk(DECL, S.decl, 'd-', 'Declarante');
-  chk(UBI, S.ubi, 'u-', 'Ubicación');
-
-  if (S.decl.fechaReporte){
-    const m = new Date(S.decl.fechaReporte + 'T12:00:00').getMonth() + 1;
-    if (m < 3 || m > 6) W.push({m:'Fecha de reporte fuera del periodo 1 de marzo al 30 de junio (§6.4)', id:'d-fechaReporte'});
-  }
-  if (blockVis('G') && S.ubi.resG !== '' && S.ubi.resG != null && Number(S.ubi.resG) >= 50)
-    E.push({m:'Aceite de transformador con 50 ppm o más: no es libre de BPC (§6.8)', id:'u-resG'});
-  if (!ALC.some(a => S.alc[a.k])) W.push({m:'No se ha seleccionado alcance (sección 2)', id:'alc'});
-
-  const vistas = {};
-  S.equipos.forEach((q, i) => {
-    const L = 'Equipo ' + (i+1), p = 'e' + i + '-';
-    chk(EQ, q, p, L);
-    if (q.serie){
-      const s = String(q.serie).trim().toUpperCase();
-      if (vistas[s] !== undefined) E.push({m:`${L}: serie repetida con Equipo ${vistas[s]+1} (§6.2)`, id: p+'serie'});
-      else vistas[s] = i;
-    }
-    const tieneConc = q.concPpm !== '' && q.concPpm != null;
-    if (tieneConc){
-      const bpc = isBPC(q);
-      if (!bpc && q.etiqueta) W.push({m:`${L}: menor a 50 ppm pero tiene etiqueta BPC (§5.5)`, id: p+'etiqueta'});
-      if (bpc && !q.etiqueta && blockVis('B')) W.push({m:`${L}: es BPC; falta colocar la etiqueta (§5.5)`, id: p+'etiqueta'});
-    }
-    if (q.tipoEquipo === 'Balastra' && (!q.fechaFab || q.fechaFab < '1980'))
-      W.push({m:`${L}: balastra sin fecha o anterior a 1980; se considera BPC por norma (§5.4)`, id: p+'fechaFab'});
-    if (q.fechaDesinc && q.fechaDesinc > '2025-12-31')
-      E.push({m:`${L}: desincorporación posterior al año límite 2025 (§6.5)`, id: p+'fechaDesinc'});
-    if (q.estado === 'En operación' && isBPC(q) && !q.fechaDesinc && blockVis('E'))
-      W.push({m:`${L}: BPC en operación sin fecha de desincorporación (§6.5)`, id: p+'fechaDesinc'});
-  });
-
-  if (!S.firma) E.push({m:'Seleccione el tipo de firma (sección 4)', id:'firma'});
-  if (S.firma === 'Firma electrónica (e.firma)' && !S.efirma) E.push({m:'Cargue y firme la e-firma (sección 4)', id:'firma'});
-  if (!S.logo) W.push({m:'Sin logotipo: el PDF saldrá sin logo (sección 1)', id:'sLogo'});
-  return {E, W};
-}
-
+/* ================= Avisos de captura ================= */
 function renderVal(){
-  let {E, W} = validate();
+  let {E, W} = validateReport(S);
   S.equipos.forEach((q, i) => { const t = document.getElementById('eqt-' + i); if (t) t.textContent = eqTitle(q, i); });
-  if (S.efirma && S.firma === 'Firma electrónica (e.firma)'){
-    if (digestOf(toXML(false)) !== S.efirma.digest) W = [...W, {m:'La e-firma no corresponde a los datos actuales: vuelva a firmar (sección 4)', id:'firma'}];
-    if (S.efirma.vigencia < new Date().toISOString().slice(0,10)) W = [...W, {m:'El certificado de la e-firma está vencido', id:'firma'}];
+  if (S.efirma && S.firma === FIRMA_EF && S.efirma.digest){
+    if (digestOf(buildXML(S, false)) !== S.efirma.digest) W = [...W, {m:'La e-firma no corresponde a los datos actuales: vuelva a firmar (sección 4)', id:'firma'}];
   }
   document.querySelectorAll('.invalid').forEach(x => x.classList.remove('invalid'));
   E.forEach(e => {
@@ -416,25 +735,14 @@ function renderVal(){
 function onField(e){
   const el = e.target;
   if (!el.dataset || !el.dataset.k) return;
-  const box = el.closest('[data-scope]');
   const k = el.dataset.k;
   let obj = null;
-  if (!box){
-    if (el.closest('#alc')) obj = S.alc;
-  } else {
-    const sc = box.dataset.scope;
-    if (sc === 'decl') obj = S.decl;
-    else if (sc === 'alc') obj = S.alc;
-    else if (sc === 'ubi') obj = S.ubi;
-    else if (sc === 'eq') obj = S.equipos[+box.dataset.eq];
-    else if (sc === 'firma') obj = S;
-  }
-  if (!obj) return;
   if (el.closest('#alc')) obj = S.alc;
-  if (el.closest('#firma')) obj = S;
-  if (el.closest('#declGrid')) obj = S.decl;
-  if (el.closest('#ubi')) obj = S.ubi;
-  if (el.closest('#eqs')){ const card = el.closest('.eq'); obj = S.equipos[+card.dataset.eq]; }
+  else if (el.closest('#firma')) obj = S;
+  else if (el.closest('#declGrid')) obj = S.decl;
+  else if (el.closest('#ubi')) obj = S.ubi;
+  else if (el.closest('#eqs')){ const card = el.closest('.eq'); obj = S.equipos[+card.dataset.eq]; }
+  if (!obj) return;
 
   if (el.type === 'checkbox' && el.dataset.multi){
     const set = new Set(Array.isArray(obj[k]) ? obj[k] : []);
@@ -447,7 +755,7 @@ function onField(e){
   } else {
     obj[k] = el.value;
   }
-  if (el.closest('#alc') || k === 'firma') { renderAll(); }
+  if (el.closest('#alc') || k === 'firma') renderAll();
   else renderVal();
   scheduleSave();
 }
@@ -499,7 +807,6 @@ document.getElementById('bDup').onclick = async () => {
   S = c; renderAll(); await saveNow();
   setMsg('Reporte duplicado: capture la nueva ubicación');
 };
-const DEF_UBI = defaults(UBI);
 document.getElementById('lista').onchange = async e => {
   const r = await dbGet(e.target.value); if (r){ S = r; renderAll(); setMsg('Reporte cargado'); }
 };
@@ -519,55 +826,18 @@ function download(name, blob){
   a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
-function xmlVal(v){
-  if (Array.isArray(v)) return v.join('; ');
-  if (typeof v === 'boolean') return v ? 'true' : 'false';
-  return v == null ? '' : String(v);
-}
-function xe(f, val){ return `<${f.k} ref="${esc(f.r)}">${esc(xmlVal(val))}</${f.k}>`; }
-
-function toXML(conFirma = true){
-  const {E, W} = validate();
-  const estado = E.length ? 'incompleto' : W.length ? 'con_advertencias' : 'completo';
-  const stamp = S.efirma ? S.efirma.stamp : new Date().toISOString();
-  const L = ['<?xml version="1.0" encoding="UTF-8"?>',
-    `<reporteBPC xmlns="urn:niuniu:bpc:nom133:1.0" version="1.0" norma="NOM-133-SEMARNAT-2015" id="${esc(S.id)}" generado="${esc(stamp)}">`,
-    `  <declarante firma="${esc(S.firma)}">`];
-  DECL.filter(fieldVisible).forEach(f => L.push('    ' + xe(f, S.decl[f.k])));
-  if (S.logo) L.push(`    <logo tipo="${esc(S.logo.mime)}" encoding="base64">${S.logo.dataURL.split(',')[1]}</logo>`);
-  L.push('  </declarante>', '  <alcance>');
-  BLOQUES.forEach(b => L.push(`    <bloque id="${b}" aplica="${blockVis(b)}"/>`));
-  L.push('  </alcance>', '  <ubicacion>');
-  UBI.filter(fieldVisible).forEach(f => L.push('    ' + xe(f, S.ubi[f.k])));
-  L.push('  </ubicacion>', '  <equipos>');
-  S.equipos.forEach((q, i) => {
-    L.push(`    <equipo id="E${i+1}" esBPC="${isBPC(q)}">`);
-    EQ.filter(fieldVisible).forEach(f => L.push('      ' + xe(f, q[f.k])));
-    L.push('    </equipo>');
-  });
-  L.push('  </equipos>');
-  if (conFirma && S.efirma){
-    L.push(`  <firmaElectronica algoritmo="RSA-SHA256" digest="${esc(S.efirma.digest)}" cn="${esc(S.efirma.cn)}" serie="${esc(S.efirma.serie)}" vigencia="${esc(S.efirma.vigencia)}">`,
-      `    <certificado encoding="base64">${S.efirma.certDer}</certificado>`,
-      `    <firma encoding="base64">${S.efirma.firma}</firma>`,
-      '  </firmaElectronica>');
-  }
-  L.push(`  <validacion estado="${estado}" errores="${E.length}" advertencias="${W.length}"/>`, '</reporteBPC>');
-  return L.join('\n');
-}
 document.getElementById('bXML').onclick = () => {
-  const {E} = validate();
+  const {E} = validateReport(S);
   if (E.length && !confirm(`Hay ${E.length} error(es). ¿Generar el XML de todas formas?`)) return;
-  download(fname() + '.xml', new Blob([toXML()], {type:'application/xml'}));
+  download(fname() + '.xml', new Blob([buildXML(S, true)], {type:'application/xml'}));
 };
 document.getElementById('bPDF').onclick = async () => {
-  const {E} = validate();
+  const {E} = validateReport(S);
   if (E.length && !confirm(`Hay ${E.length} error(es). ¿Generar el PDF de todas formas?`)) return;
   await toPDF();
 };
 
 const imgDim = src => new Promise(r => { const im = new Image(); im.onload = () => r({w: im.naturalWidth, h: im.naturalHeight}); im.src = src; });
-const nr = t => String(t).replace(/§ ?/g, 'num. ');
 function fmtPdf(v){
   if (Array.isArray(v)) return v.length ? v.join('; ') : '-';
   if (typeof v === 'boolean') return v ? 'Sí' : 'No';
@@ -609,12 +879,12 @@ async function toPDF(){
     doc.setFontSize(9); doc.setTextColor(0); doc.text(vl, M + 75, y);
     y += h;
   };
-  const list = (fields, obj) => fields.filter(fieldVisible).forEach(f => row(f.l, f.r, obj[f.k]));
+  const list = (fields, obj) => fields.filter(f => fieldVisible(S, f)).forEach(f => row(f.l, f.r, obj[f.k]));
 
   sec('1. Declarante');
   list(DECL, S.decl);
   sec('2. Alcance');
-  row('Bloques aplicables', 'Sección 2', BLOQUES.filter(blockVis).join(', '));
+  row('Bloques aplicables', 'Sección 2', BLOQUES.filter(b => blockVis(S, b)).join(', '));
   sec('3. Ubicación');
   list(UBI, S.ubi);
   S.equipos.forEach((q, i) => {
@@ -623,7 +893,7 @@ async function toPDF(){
     row('Resultado BPC', '§4.7; §5.3.1', isBPC(q) ? 'Sí (50 ppm o más)' : 'No');
   });
   sec('4. Validación');
-  const {E, W: AV} = validate();
+  const {E, W: AV} = validateReport(S);
   row('Estado', 'Validación', E.length ? `Incompleto: ${E.length} error(es)` : AV.length ? `Válido con ${AV.length} advertencia(s)` : 'Completo y válido');
 
   sec('5. Firma');
@@ -637,7 +907,7 @@ async function toPDF(){
     doc.rect(M, y, 90, 30);
     doc.setFontSize(7); doc.setTextColor(130); doc.text('Espacio para firma', M + 2, y + 4); doc.setTextColor(0); doc.setFontSize(9);
     y += 36;
-  } else if (S.efirma){
+  } else if (S.efirma && S.efirma.digest){
     const lines = ['Firmado electrónicamente (RSA-SHA256)', 'Firmante: ' + (S.efirma.cn || '-'),
       'Número de serie del certificado: ' + S.efirma.serie, 'Vigencia del certificado: ' + S.efirma.vigencia,
       'Digest del contenido: ' + S.efirma.digest, 'La firma completa está en el XML (elemento firmaElectronica).'];
@@ -658,8 +928,6 @@ async function toPDF(){
 }
 
 /* ================= E-firma (SAT) ================= */
-let EF = {cert: null, keyBin: null};
-function digestOf(str){ const m = forge.md.sha256.create(); m.update(str, 'utf8'); return m.digest().toHex(); }
 function openEF(){ document.getElementById('efModal').style.display = 'flex'; document.getElementById('efInfo').textContent = S.efirma ? 'Firma actual: ' + S.efirma.cn : ''; }
 function closeEF(){ document.getElementById('efModal').style.display = 'none'; document.getElementById('efPass').value = ''; }
 async function readBin(f){
@@ -676,18 +944,10 @@ async function firmarEF(){
   try { key = forge.pki.decryptRsaPrivateKey(pem, pass); } catch (e) { key = null; }
   if (!key){ info.textContent = 'Contraseña incorrecta o llave no válida.'; return; }
   if (key.n.toString(16) !== EF.cert.publicKey.n.toString(16)){ info.textContent = 'La llave no corresponde al certificado.'; return; }
-  const cnF = EF.cert.subject.getField('CN');
-  S.efirma = {
-    stamp: new Date().toISOString(),
-    cn: cnF ? cnF.value : '',
-    serie: EF.cert.serialNumber,
-    vigencia: EF.cert.validity.notAfter.toISOString().slice(0, 10),
-    certDer: forge.util.encode64(forge.asn1.toDer(forge.pki.certificateToAsn1(EF.cert)).getBytes())
-  };
-  const payload = toXML(false);
-  const m = forge.md.sha256.create(); m.update(payload, 'utf8');
-  S.efirma.digest = digestOf(payload);
-  S.efirma.firma = forge.util.encode64(key.sign(m));
+  const stamp = new Date().toISOString();
+  S.efirma = {stamp};                       // primero el sello de tiempo: la carga útil lo incluye
+  const payload = buildXML(S, false);
+  S.efirma = firmarPayload(payload, key, EF.cert, stamp);
   EF = {cert: null, keyBin: null};
   closeEF(); renderAll(); await saveNow();
   setMsg('E-firma aplicada');
@@ -714,10 +974,113 @@ document.getElementById('efQuitar').onclick = async () => {
 };
 
 /* ================= Arranque ================= */
+renderAll();
 (async () => {
   try { await refreshList(); } catch (err) { setMsg('Base local no disponible: ' + err); }
-  renderAll();
 })();
+
+</script>
+<script>
+const NIVEL_TXT = {error:'Error', advertencia:'Advertencia', ok:'Correcto'};
+const $ = id => document.getElementById(id);
+
+function mostrarError(msg){
+  $('errorCarga').innerHTML = `<span style="color:var(--err)">${esc(msg)}</span>`;
+  ['resumen','datos','detalle'].forEach(id => $(id).hidden = true);
+}
+
+function leerTexto(file){
+  return new Promise((res, rej) => {
+    const rd = new FileReader();
+    rd.onload = () => res(rd.result);
+    rd.onerror = () => rej(rd.error);
+    rd.readAsText(file, 'UTF-8');
+  });
+}
+
+async function revisar(file){
+  $('errorCarga').textContent = '';
+  let texto;
+  try { texto = await leerTexto(file); } catch (e) { mostrarError('No se pudo leer el archivo.'); return; }
+  const nombre = file.name.toLowerCase();
+  let R = null, errs = [], meta = null, payload = null;
+
+  if (nombre.endsWith('.json') || texto.trim().startsWith('{')){
+    try {
+      const o = JSON.parse(texto);
+      const base = newReport();
+      R = {...base, ...o, decl: {...base.decl, ...(o.decl || {})}, ubi: {...base.ubi, ...(o.ubi || {})},
+           alc: {...base.alc, ...(o.alc || {})}, equipos: Array.isArray(o.equipos) ? o.equipos.map(q => ({...defaults(EQ), ...q})) : []};
+    } catch (e) { mostrarError('El JSON no es válido.'); return; }
+  } else if (nombre.endsWith('.xml') || texto.trim().startsWith('<')){
+    const p = parseReporteXML(texto, DOMParser);
+    if (!p.R){ mostrarError(p.errs[0] ? p.errs[0].m : 'No se pudo leer el XML.'); return; }
+    R = p.R; errs = p.errs; meta = p.meta;
+    payload = payloadDeXML(texto);
+  } else {
+    mostrarError('Formato no compatible. Suba un archivo .xml o .json generado por el formulario.');
+    return;
+  }
+
+  const au = auditarDocumento(R, {errs, meta, payload});
+  pintar(R, au);
+}
+
+function pintar(R, au){
+  ['resumen','datos','detalle'].forEach(id => $(id).hidden = false);
+
+  const estado = au.nErr ? `<span class="badge bErr">Con ${au.nErr} error(es)</span>`
+    : au.nWarn ? `<span class="badge bWarn">Válido con ${au.nWarn} advertencia(s)</span>`
+    : '<span class="badge bOk">Documento válido</span>';
+  $('cabecera').innerHTML = estado + `<span class="desc">Revisado el ${esc(new Date().toLocaleString('es-MX'))}</span>`;
+
+  const f = au.firma;
+  let fb;
+  if (!R.efirma) fb = `<div class="firma firma-nd">Sin firma electrónica en el documento (tipo declarado: ${esc(R.firma || 'no definido')}).</div>`;
+  else if (f && f.digestOk && f.sigOk && f.certCoincide && !f.error)
+    fb = `<div class="firma firma-ok"><b>Firma válida.</b> Firmante: ${esc(f.cn || '-')} · serie del certificado ${esc(R.efirma.serie)} · vigencia ${esc(R.efirma.vigencia)}${f.vigenciaVencida ? ' · <span style="color:var(--warn)">certificado vencido</span>' : ''}</div>`;
+  else fb = `<div class="firma firma-mal"><b>Firma no válida.</b> ${!f.digestOk ? 'El contenido cambió después de firmarse.' : ''} ${!f.sigOk ? 'La firma no corresponde al certificado.' : ''} ${f && f.error ? esc(f.error) : ''}</div>`;
+  $('firmaBox').innerHTML = fb;
+
+  const alcance = ALC.filter(a => R.alc[a.k]).map(a => a.l).join('; ') || 'ninguno';
+  $('datosBody').innerHTML = `
+    <table>
+      <tr><th style="width:260px">Razón social</th><td>${esc(R.decl.razonSocial || '-')}</td></tr>
+      <tr><th>RFC</th><td>${esc(R.decl.rfc || '-')}</td></tr>
+      <tr><th>Año que reporta</th><td>${esc(R.decl.periodo || '-')}</td></tr>
+      <tr><th>Ubicación</th><td>${esc(R.ubi.nombreUbi || '-')} · ${esc(R.ubi.direccion || '-')}</td></tr>
+      <tr><th>Alcance</th><td>${esc(alcance)}</td></tr>
+      <tr><th>Tipo de firma</th><td>${esc(R.firma || '-')}</td></tr>
+      <tr><th>Logotipo</th><td>${R.logo ? 'Incluido' : 'No incluido'}</td></tr>
+    </table>
+    <h3 style="font-size:13px;color:var(--p);margin:14px 0 6px">Equipos (${R.equipos.length})</h3>
+    <table>
+      <thead><tr><th>#</th><th>Tipo</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Concentración (ppm)</th><th>BPC</th></tr></thead>
+      <tbody>${R.equipos.map((q, i) => `
+        <tr><td>${i+1}</td><td>${esc(q.tipoEquipo || '-')}</td><td>${esc(q.marca || '-')}</td><td>${esc(q.modelo || '-')}</td>
+            <td>${esc(q.serie || '-')}</td><td>${esc(q.concPpm === '' ? '-' : q.concPpm)}</td>
+            <td>${q.concPpm === '' || q.concPpm == null ? '-' : (isBPC(q) ? 'Sí' : 'No')}</td></tr>`).join('') || '<tr><td colspan="7">Sin equipos</td></tr>'}
+      </tbody>
+    </table>`;
+
+  const orden = {error:0, advertencia:1, ok:2};
+  const items = [...au.items].sort((a,b) => orden[a.nivel] - orden[b.nivel]);
+  $('tbHallazgos').innerHTML = items.map(it => `
+    <tr><td class="nivel n-${it.nivel}">${NIVEL_TXT[it.nivel]}</td><td>${esc(it.seccion || '-')}</td><td>${esc(it.m)}</td></tr>`).join('');
+}
+
+$('fDoc').addEventListener('change', e => { const f = e.target.files[0]; if (f) revisar(f); });
+$('bImp').onclick = () => window.print();
+
+</script>
+<script>
+function mostrarVista(v){
+  document.getElementById('vistaFormulario').hidden = v !== 'form';
+  document.getElementById('vistaValidador').hidden = v !== 'val';
+  document.body.classList.toggle('modo-val', v === 'val');
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === v));
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => mostrarVista(b.dataset.tab));
 </script>
 </body>
 </html>
